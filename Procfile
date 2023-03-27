@@ -1,0 +1,1 @@
+worker1: python3 skybot.py
