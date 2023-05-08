@@ -4,7 +4,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import pytz
 
 load_dotenv()
@@ -16,6 +16,7 @@ BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 intents = discord.Intents.default()
 intents.message_content = True
 intents.reactions = True
+intents.members = True
 client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -24,9 +25,10 @@ REACTION_THRESHOLD = 5
 REACTION_EMOJI = "🛰️"
 
 # Start the anniversary checker loop
-@client.event
+@bot.event
 async def on_ready():
-    client.loop.create_task(check_anniversaries())
+    while True:
+        await check_anniversaries()
 
 @bot.event
 async def on_raw_reaction_add(ctx):
@@ -78,15 +80,14 @@ async def check_anniversaries():
         postChannel = discord.utils.get(guild.channels, id = 972905096230891543)
 
         #Check each member to see if it's their anniversary
-        for member in guild.members:
-            join_date = member.joined_at
-            time_since_join = now - join_date
-            years = time_since_join.days // 365
+        async for member in guild.fetch_members():
+            join_date = member.joined_at                                                                            
+            years = now.year - join_date.year
             #We'll use this later
             posted = False
 
             #If the user has been here at least a year and today is his anniversary
-            if years > 0 and time_since_join.days % 365 == 0:
+            if years > 0 and ((join_date.day == now.day and join_date.month == now.month) or (join_date.day == 29 and join_date.month == 2 and now.month == 3 and now.month == 1)) and not member.bot:
                 #See if the user is in the anniversary list
                 conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
                 cur = conn.cursor()
@@ -113,8 +114,8 @@ async def check_anniversaries():
                     await asyncio.sleep(600)  # Sleep for 10 minutes (600 seconds)
     # Calculate the time until 10 AM EST and sleep until then
     next_start = now.replace(hour=10, minute=0, second=0, microsecond=0)
-    if now.hour >= 18:
-        next_start += timedelta(days=1)  # Next day if the current time is past 6 PM
+    #if now.hour >= 18:
+    next_start += timedelta(days=1)  # Next day if the current time is past 6 PM
     sleep_duration = (next_start - now).total_seconds()
     await asyncio.sleep(sleep_duration)
 
