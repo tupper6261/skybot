@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord.ui import Button, View, Select
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -24,9 +25,47 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 REACTION_THRESHOLD = 5
 REACTION_EMOJI = "🛰️"
 
+participants = set()  # Set to store the participants' user IDs
+
+class OptInView(View):
+    def __init__(self):
+        super().__init__()
+
+    @discord.ui.button(label="Opt-In", style=discord.ButtonStyle.green)
+    async def opt_in_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user = interaction.user
+        if user.id not in participants:
+            participants.add(user.id)
+            await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service.", ephemeral=True)
+        else:
+            await interaction.response.send_message(content=f"{user.mention}, you are already opted-in.", ephemeral=True)
+
+    @discord.ui.button(label="Opt-Out", style=discord.ButtonStyle.red)
+    async def opt_out_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user = interaction.user
+        if user.id in participants:
+            participants.remove(user.id)
+            await interaction.response.send_message(content=f"{user.mention}, you have been removed from the matching service.", ephemeral=True)
+        else:
+            await interaction.response.send_message(content=f"{user.mention}, you are already opted-out.", ephemeral=True)
+
 # Start the anniversary checker loop
 @bot.event
 async def on_ready():
+    guild_id = 972905096230891540  # Replace with your guild ID
+    channel_id = 1121094795792756847  # Replace with your channel ID where the opt-in message will be sent
+
+    guild = bot.get_guild(guild_id)
+    channel = guild.get_channel(channel_id)
+
+    message = discord.utils.get(await channel.history(limit=10).flatten(), author=bot.user)
+    if not message:
+        message = await channel.send("Click the buttons below to opt-in or opt-out:")
+    else:
+        await message.edit(content="Click the buttons below to opt-in or opt-out:")
+
+    view = OptInView()
+    await message.edit(view=view)
     while True:
         await check_anniversaries()
 
@@ -72,8 +111,8 @@ async def on_raw_reaction_add(ctx):
 #Checks the anniversaries in the user list and sends a happy anniversary message
 async def check_anniversaries():
     now = datetime.now(pytz.timezone('US/Eastern'))
-    # Check if the current time is between 10 AM and 6 PM EST
-    if time(10, 0) <= now.time() <= time(18, 0):
+    # Check if the current time is after 10 AM EST
+    if time(10, 0) <= now.time():
         #Get the Skylab guild
         guild = bot.get_guild(972905096230891540)
         #Get the general channel
@@ -113,9 +152,8 @@ async def check_anniversaries():
                 if posted == True:
                     await asyncio.sleep(600)  # Sleep for 10 minutes (600 seconds)
     # Calculate the time until 10 AM EST and sleep until then
-    next_start = now.replace(hour=10, minute=0, second=0, microsecond=0)
-    #if now.hour >= 18:
-    next_start += timedelta(days=1)  # Next day if the current time is past 6 PM
+    today = now.day
+    next_start = now.replace(day = today + 1, hour=10, minute=0, second=0, microsecond=0) 
     sleep_duration = (next_start - now).total_seconds()
     await asyncio.sleep(sleep_duration)
 
