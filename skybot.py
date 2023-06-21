@@ -29,7 +29,7 @@ participants = set()  # Set to store the participants' user IDs
 
 class OptInView(View):
     def __init__(self):
-        super().__init__()
+        super().__init__(timeout=None)
 
     @discord.ui.button(label="Opt-In", style=discord.ButtonStyle.green)
     async def opt_in_button(self, button: discord.ui.Button, interaction: discord.Interaction):
