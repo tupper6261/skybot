@@ -25,8 +25,6 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 REACTION_THRESHOLD = 5
 REACTION_EMOJI = "🛰️"
 
-participants = set()  # Set to store the participants' user IDs
-
 class OptInView(View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -34,20 +32,47 @@ class OptInView(View):
     @discord.ui.button(label="Opt-In", style=discord.ButtonStyle.green)
     async def opt_in_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         user = interaction.user
-        if user.id not in participants:
-            participants.add(user.id)
-            await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service.", ephemeral=True)
+        #See if the user is in the anniversary list
+        conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+        cur = conn.cursor()
+        cur.execute("select * from matchmaking where discord_user_id = {}".format(user.id))
+        result = cur.fetchall()
+        #If (s)he isn't in the list, add them and opt them in
+        if result == []:
+            cur.execute("insert into matchmaking (discord_user_id, opted_in) values ({}, true)".format(user.id))
+            await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Sundays.", ephemeral=True)
         else:
-            await interaction.response.send_message(content=f"{user.mention}, you are already opted-in.", ephemeral=True)
+            #If the user is already opted in
+            if result[0][1]:
+                await interaction.response.send_message(content=f"{user.mention}, you are already opted-in.", ephemeral=True)
+            else:
+                cur.execute("update matchmaking set opted_in = true where discord_user_id = {}".format(user.id))
+        cur.close()
+        conn.commit()
+        conn.close()
 
     @discord.ui.button(label="Opt-Out", style=discord.ButtonStyle.red)
     async def opt_out_button(self, button: discord.ui.Button, interaction: discord.Interaction):
         user = interaction.user
-        if user.id in participants:
-            participants.remove(user.id)
-            await interaction.response.send_message(content=f"{user.mention}, you have been removed from the matching service.", ephemeral=True)
-        else:
+        #See if the user is in the anniversary list
+        conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+        cur = conn.cursor()
+        cur.execute("select * from matchmaking where discord_user_id = {}".format(user.id))
+        result = cur.fetchall()
+        #If (s)he isn't in the list, nothing needs to be done
+        if result == []:
             await interaction.response.send_message(content=f"{user.mention}, you are already opted-out.", ephemeral=True)
+        else:
+            #If the user is currently opted in
+            if result[0][1]:
+                cur.execute("update matchmaking set opted_in = false where discord_user_id = {}".format(user.id))
+                await interaction.response.send_message(content=f"{user.mention}, you have opted-out from the matching service.", ephemeral=True)
+            else:
+                await interaction.response.send_message(content=f"{user.mention}, you are already opted-out.", ephemeral=True)
+        cur.close()
+        conn.commit()
+        conn.close()
+            
 
 # Start the anniversary checker loop
 @bot.event
