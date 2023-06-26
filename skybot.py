@@ -47,6 +47,7 @@ class OptInView(View):
                 await interaction.response.send_message(content=f"{user.mention}, you are already opted-in.", ephemeral=True)
             else:
                 cur.execute("update matchmaking set opted_in = true where discord_user_id = {}".format(user.id))
+                await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Sundays.", ephemeral=True)
         cur.close()
         conn.commit()
         conn.close()
@@ -135,9 +136,25 @@ async def on_raw_reaction_add(ctx):
 
     # Check if the reaction is the ✅ emoji and if the count is equal to or greater than the threshold
     if ctx.emoji.name == "✅" and ctx.member != bot.user and ctx.message_id == 1122894424070959144:
-        guild_id = 972905096230891540
-        tester_role = ctx.guild.get_role(1122894492282912829)
-        await ctx.member.add_roles(tester_role)
+        guild = await bot.fetch_guild(ctx.guild_id)
+        tester_role = guild.get_role(1122894492282912829)
+        user = ctx.member
+        await user.add_roles(tester_role)
+        #See if the user is in the matchmaking list
+        conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+        cur = conn.cursor()
+        cur.execute("select * from matchmaking where discord_user_id = {}".format(user.id))
+        result = cur.fetchall()
+        #If (s)he isn't in the list, add them and opt them in
+        if result == []:
+            cur.execute("insert into matchmaking (discord_user_id, opted_in) values ({}, true)".format(user.id))
+        else:
+            #If the user isn't already opted in
+            if result[0][1] == False:
+                cur.execute("update matchmaking set opted_in = true where discord_user_id = {}".format(user.id))
+        cur.close()
+        conn.commit()
+        conn.close()
 
 
 #Checks the anniversaries in the user list and sends a happy anniversary message
