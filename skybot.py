@@ -133,6 +133,13 @@ async def on_raw_reaction_add(ctx):
                     conn.commit()
                     conn.close()
 
+    # Check if the reaction is the ✅ emoji and if the count is equal to or greater than the threshold
+    if ctx.emoji.name == "✅" and ctx.member != bot.user and ctx.message_id == 1122894424070959144:
+        guild_id = 972905096230891540
+        tester_role = ctx.guild.get_role(1122894492282912829)
+        await ctx.member.add_roles(tester_role)
+
+
 #Checks the anniversaries in the user list and sends a happy anniversary message
 async def check_anniversaries():
     now = datetime.now(pytz.timezone('US/Eastern'))
