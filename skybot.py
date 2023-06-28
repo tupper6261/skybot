@@ -247,9 +247,8 @@ async def make_matches():
     conn.commit()
     conn.close()
 
-async def create_private_channel(user_ids):
-    guild_id = 972905096230891540 
-    category_id = 1121094611436314634
+async def create_private_channel(user_ids, category_id):
+    guild_id = 972905096230891540
     guild = bot.get_guild(guild_id)
 
     overwrites = {
