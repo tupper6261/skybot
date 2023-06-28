@@ -221,27 +221,64 @@ async def clear_existing_channels(category_id):
 # Make matches
 async def make_matches():
     category_id = 1121094611436314634  # Replace with the ID of the Meetups category
+    category = guild.get_channel(category_id)
+    opt_channel_id = 1121094795792756847
+
+    conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+    cur = conn.cursor()
+
+    #Go through the channels in the category and find out who ghosted
+    cur.execute("SELECT * FROM matchmaking_channels")
+    results = cur.fetchall()
+    for row in results:
+        ghosted = True
+        discord_user_id = row[0]
+        channel_id = row[1]
+
+        # Get the channel object
+        channel = guild.get_channel(channel_id)
+
+        # Retrieve the message history of the channel
+        messages = await channel.history().flatten()
+
+        # Iterate through the messages and check the author
+        for message in messages:
+            if message.author.id == discord_user_id:
+                ghosted = False
+                break  # No need to continue iterating if the user's message is found
+
+        cur.execute("select * from matchmaking where discord_user_id = {0}".format(discord_user_id))
+        result = cur.fetchall()[0]
+        if ghosted:
+            cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result(3)+1, discord_user_id))
+        else:
+            cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result(4)+1, discord_user_id))
+        conn.commit()
+
+    #Clear the matchmaking_channels table
+    cur.execute("truncate matchmaking_channels")
 
     # Clear existing channels from the category except for the opt-in/opt-out channel
     await clear_existing_channels(category_id)
 
-    conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
-    cur = conn.cursor()
+    
     cur.execute("SELECT discord_user_id FROM matchmaking WHERE opted_in = true")
     result = cur.fetchall()
 
-    users = [i[0] for i in result]  # Collect discord_user_id from the result directly
-
-    # If there are an odd number of opted-in users, we'll make a threesome
-    if len(users) % 2 == 1:
-        matchUsers = random.sample(users, 3)
-        users = [user for user in users if user not in matchUsers]
-        await create_private_channel(matchUsers, category_id)
+    # Collect discord_user_id from the result directly
+    users = [i[0] for i in result]  
 
     while len(users) >= 2:
-        matchUsers = random.sample(users, 2)
-        users = [user for user in users if user not in matchUsers]
-        await create_private_channel(matchUsers, category_id)
+        # If there are an odd number of opted-in users, we'll make a threesome
+        if len(users) % 2 == 1:
+            matchUsers = random.sample(users, 3)
+        else:
+            matchUsers = random.sample(users, 2)
+            users = [user for user in users if user not in matchUsers]
+            newChannel = await create_private_channel(matchUsers, category_id)
+            for user in matchUsers:
+                cur.execute("insert into matchmaking_channels (discord_user_id, channel_id) values ({0}, {1})".format(user, newChannel.id))
+                conn.commit()
 
     cur.close()
     conn.commit()
