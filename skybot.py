@@ -273,6 +273,8 @@ async def create_private_channel(user_ids, category_id):
         user = guild.get_member(user_id)
         if user:
             await channel.set_permissions(user, read_messages=True)
+        else:
+            print (user)
 
     # Additional logic to notify users about the channel, etc.
 
