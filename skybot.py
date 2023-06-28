@@ -220,6 +220,8 @@ async def clear_existing_channels(category_id):
 
 # Make matches
 async def make_matches():
+    guild_id = 972905096230891540  # Replace with your guild ID
+    guild = bot.get_guild(guild_id)
     category_id = 1121094611436314634  # Replace with the ID of the Meetups category
     category = guild.get_channel(category_id)
     opt_channel_id = 1121094795792756847
