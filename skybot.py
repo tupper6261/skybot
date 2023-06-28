@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import asyncio
 from datetime import datetime, timedelta, time
 import pytz
+import random
 
 load_dotenv()
 
@@ -75,7 +76,6 @@ class OptInView(View):
         conn.close()
             
 
-# Start the anniversary checker loop
 @bot.event
 async def on_ready():
     guild_id = 972905096230891540  # Replace with your guild ID
@@ -206,5 +206,85 @@ async def check_anniversaries():
     sleep_duration = (next_start - now).total_seconds()
     await asyncio.sleep(sleep_duration)
 
+# Clear all existing channels from the specified category except for the opt-in/opt-out channel
+async def clear_existing_channels(category_id):
+    guild_id = 972905096230891540  # Replace with your guild ID
+    guild = bot.get_guild(guild_id)
+
+    category = guild.get_channel(category_id)
+    opt_channel_id = 1121094795792756847  # Replace with the ID of the opt-in/opt-out channel
+
+    for channel in category.channels:
+        if channel.id != opt_channel_id:
+            await channel.delete()
+
+# Make matches
+async def make_matches():
+    category_id = 1121094611436314634  # Replace with the ID of the Meetups category
+
+    # Clear existing channels from the category except for the opt-in/opt-out channel
+    await clear_existing_channels(category_id)
+
+    conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+    cur = conn.cursor()
+    cur.execute("SELECT discord_user_id FROM matchmaking WHERE opted_in = true")
+    result = cur.fetchall()
+
+    users = [i[0] for i in result]  # Collect discord_user_id from the result directly
+
+    # If there are an odd number of opted-in users, we'll make a threesome
+    if len(users) % 2 == 1:
+        matchUsers = random.sample(users, 3)
+        users = [user for user in users if user not in matchUsers]
+        await create_private_channel(matchUsers, category_id)
+
+    while len(users) >= 2:
+        matchUsers = random.sample(users, 2)
+        users = [user for user in users if user not in matchUsers]
+        await create_private_channel(matchUsers, category_id)
+
+    cur.close()
+    conn.commit()
+    conn.close()
+
+async def create_private_channel(user_ids):
+    guild_id = 972905096230891540 
+    category_id = 1121094611436314634
+    guild = bot.get_guild(guild_id)
+
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=False),
+        guild.me: discord.PermissionOverwrite(read_messages=True)
+    }
+
+    usernames = []
+    for user_id in user_ids:
+        user = guild.get_member(user_id)
+        if user:
+            usernames.append(user.name)
+
+    channel_name = "-".join(usernames)  # Concatenate usernames with hyphens
+    channel = await guild.create_text_channel(
+        name=channel_name,
+        category=guild.get_channel(category_id),
+        overwrites=overwrites
+    )
+
+    for user_id in user_ids:
+        user = guild.get_member(user_id)
+        if user:
+            await channel.set_permissions(user, read_messages=True)
+
+    # Additional logic to notify users about the channel, etc.
+
+    # You can also return the created channel if needed
+    return channel
+
+# Slash command for testing make_matches
+@bot.slash_command()
+async def test_make_matches(ctx):
+    await ctx.defer()  # Defer the response to ensure the command doesn't time out
+
+    await make_matches()
 
 bot.run(BOT_TOKEN)
