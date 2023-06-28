@@ -281,7 +281,7 @@ async def create_private_channel(user_ids):
     return channel
 
 # Slash command for testing make_matches
-@bot.slash_command()
+@bot.slash_command(guild_ids=[972905096230891540], description = "Make matches")
 async def test_make_matches(ctx):
     await ctx.defer()  # Defer the response to ensure the command doesn't time out
 
