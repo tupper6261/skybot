@@ -271,6 +271,7 @@ async def make_matches():
 
     # Collect discord_user_id from the result directly
     users = [i[0] for i in result]  
+    print ("here now")
 
     while len(users) >= 2:
         # If there are an odd number of opted-in users, we'll make a threesome
@@ -281,6 +282,7 @@ async def make_matches():
             users = [user for user in users if user not in matchUsers]
             newChannel = await create_private_channel(matchUsers, category_id)
             for user in matchUsers:
+                print (user)
                 cur.execute("insert into matchmaking_channels (discord_user_id, channel_id) values ({0}, {1})".format(user, newChannel.id))
                 conn.commit()
 
@@ -289,6 +291,7 @@ async def make_matches():
     conn.close()
 
 async def create_private_channel(user_ids, category_id):
+    print ("creating private channel")
     guild_id = 972905096230891540
     guild = bot.get_guild(guild_id)
 
