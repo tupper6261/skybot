@@ -19,7 +19,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.reactions = True
 intents.members = True
-client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Adjust the reaction threshold here
@@ -232,6 +231,7 @@ async def make_matches():
     #Go through the channels in the category and find out who ghosted
     cur.execute("SELECT * FROM matchmaking_channels")
     results = cur.fetchall()
+    print (results)
     for row in results:
         ghosted = True
         discord_user_id = row[0]
@@ -256,13 +256,15 @@ async def make_matches():
         else:
             cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result(4)+1, discord_user_id))
         conn.commit()
+    print ("here")
 
     #Clear the matchmaking_channels table
     cur.execute("truncate matchmaking_channels")
+    print ("truncated")
+    conn.commit()
 
     # Clear existing channels from the category except for the opt-in/opt-out channel
     await clear_existing_channels(category_id)
-
     
     cur.execute("SELECT discord_user_id FROM matchmaking WHERE opted_in = true")
     result = cur.fetchall()
