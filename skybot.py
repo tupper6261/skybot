@@ -231,7 +231,6 @@ async def make_matches():
     #Go through the channels in the category and find out who ghosted
     cur.execute("SELECT * FROM matchmaking_channels")
     results = cur.fetchall()
-    print (results)
     for row in results:
         ghosted = True
         discord_user_id = row[0]
@@ -256,11 +255,9 @@ async def make_matches():
         else:
             cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result(4)+1, discord_user_id))
         conn.commit()
-    print ("here")
 
     #Clear the matchmaking_channels table
     cur.execute("truncate matchmaking_channels")
-    print ("truncated")
     conn.commit()
 
     # Clear existing channels from the category except for the opt-in/opt-out channel
@@ -271,7 +268,6 @@ async def make_matches():
 
     # Collect discord_user_id from the result directly
     users = [i[0] for i in result]  
-    print ("here now")
 
     while len(users) >= 2:
         # If there are an odd number of opted-in users, we'll make a threesome
@@ -279,19 +275,17 @@ async def make_matches():
             matchUsers = random.sample(users, 3)
         else:
             matchUsers = random.sample(users, 2)
-            users = [user for user in users if user not in matchUsers]
-            newChannel = await create_private_channel(matchUsers, category_id)
-            for user in matchUsers:
-                print (user)
-                cur.execute("insert into matchmaking_channels (discord_user_id, channel_id) values ({0}, {1})".format(user, newChannel.id))
-                conn.commit()
+        users = [user for user in users if user not in matchUsers]
+        newChannel = await create_private_channel(matchUsers, category_id)
+        for user in matchUsers:
+            cur.execute("insert into matchmaking_channels (discord_user_id, channel_id) values ({0}, {1})".format(user, newChannel.id))
+            conn.commit()
 
     cur.close()
     conn.commit()
     conn.close()
 
 async def create_private_channel(user_ids, category_id):
-    print ("creating private channel")
     guild_id = 972905096230891540
     guild = bot.get_guild(guild_id)
 
@@ -320,8 +314,6 @@ async def create_private_channel(user_ids, category_id):
         user = guild.get_member(user_id)
         if user:
             await channel.set_permissions(user, read_messages=True)
-        else:
-            print (user)
 
     # Additional logic to notify users about the channel, etc.
 
