@@ -205,16 +205,17 @@ async def check_anniversaries():
     sleep_duration = (next_start - now).total_seconds()
     await asyncio.sleep(sleep_duration)
 
-# Clear all existing channels from the specified category except for the opt-in/opt-out channel
+# Clear all existing channels from the specified category except for the opt-in/opt-out and stats channels
 async def clear_existing_channels(category_id):
     guild_id = 972905096230891540  # Replace with your guild ID
     guild = bot.get_guild(guild_id)
 
     category = guild.get_channel(category_id)
-    opt_channel_id = 1121094795792756847  # Replace with the ID of the opt-in/opt-out channel
+    opt_channel_id = 1121094795792756847  #ID of the opt-in/opt-out channel
+    stat_channel_id = 1124068878369181806 #ID of the stats channel
 
     for channel in category.channels:
-        if channel.id != opt_channel_id:
+        if channel.id != opt_channel_id and channel.id != stat_channel_id:
             await channel.delete()
 
 # Make matches
@@ -252,6 +253,7 @@ async def make_matches():
         result = cur.fetchall()[0]
         if ghosted:
             cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result[3]+1, discord_user_id))
+            cur.execute("update matchmaking set opted_in = false where discord_user_id = {0}".format(discord_user_id))
         else:
             cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result[4]+1, discord_user_id))
         conn.commit()
@@ -295,10 +297,13 @@ async def create_private_channel(user_ids, category_id):
     }
 
     usernames = []
+    userMentions = []
     for user_id in user_ids:
         user = guild.get_member(user_id)
         if user:
+            overwrites[user] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
             usernames.append(user.name)
+            userMentions.append(user.mention)
 
     channel_name = "-".join(usernames)  # Concatenate usernames with hyphens
     channel = await guild.create_text_channel(
@@ -310,12 +315,11 @@ async def create_private_channel(user_ids, category_id):
     # Delay before setting permissions
     await asyncio.sleep(1)
 
+    notification_message = f"Hello {' and '.join(userMentions)}! This private channel has been created for your meetup. Enjoy your chat!\n\nCan you go ahead and post in this channel? Nothing too serious - it might get deleted with no notice 😅"
     for user_id in user_ids:
         user = guild.get_member(user_id)
         if user:
-            await channel.set_permissions(user, read_messages=True)
-
-    # Additional logic to notify users about the channel, etc.
+            await channel.send(content=user.mention, content=notification_message)
 
     # You can also return the created channel if needed
     return channel
