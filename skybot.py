@@ -251,9 +251,9 @@ async def make_matches():
         cur.execute("select * from matchmaking where discord_user_id = {0}".format(discord_user_id))
         result = cur.fetchall()[0]
         if ghosted:
-            cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result(3)+1, discord_user_id))
+            cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result[3]+1, discord_user_id))
         else:
-            cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result(4)+1, discord_user_id))
+            cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result[4]+1, discord_user_id))
         conn.commit()
 
     #Clear the matchmaking_channels table
