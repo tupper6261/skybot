@@ -337,7 +337,7 @@ async def create_private_channel(user_ids, category_id):
     # Delay before setting permissions
     await asyncio.sleep(1)
 
-    notification_message = f"Hello {' and '.join(userMentions)}! This private channel has been created for your meetup. Enjoy your chat!\n\nCan you go ahead and post in this channel? Nothing too serious - it might get deleted with no notice 😅"
+    notification_message = f"Hello {' and '.join(userMentions)}! This private channel has been created for your meetup. Enjoy your chat!"
     await channel.send(content=notification_message)
 
     # You can also return the created channel if needed
