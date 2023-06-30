@@ -225,6 +225,7 @@ async def make_matches():
     category_id = 1121094611436314634  # Replace with the ID of the Meetups category
     category = guild.get_channel(category_id)
     opt_channel_id = 1121094795792756847
+    stat_channel_id = 1124068878369181806 #ID of the stats channel
 
     conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
     cur = conn.cursor()
@@ -232,6 +233,15 @@ async def make_matches():
     #Go through the channels in the category and find out who ghosted
     cur.execute("SELECT * FROM matchmaking_channels")
     results = cur.fetchall()
+
+    successfulMeetups = []
+
+    for row in results:
+        if row[1] not in successfulMeetups:
+            successfulMeetups.append(row[1])
+
+    numTotalMeetups = len(successfulMeetups)
+
     for row in results:
         ghosted = True
         discord_user_id = row[0]
@@ -254,9 +264,21 @@ async def make_matches():
         if ghosted:
             cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result[3]+1, discord_user_id))
             cur.execute("update matchmaking set opted_in = false where discord_user_id = {0}".format(discord_user_id))
+            if channel_id in successfulMeetups:
+                successfulMeetups.remove(channel_id)
+            user = guild.get_member(discord_user_id)
+            if user:
+                # Notify the user about being opted out
+                opt_out_message = f"{user.mention}, it seems like you didn't post a message in your meetup channel during this last session. I've gone ahead and opted you out from meetups for now. Feel free to head to <#{opt_channel_id} and opt back in if you'd like!"
+                await guild.get_channel(stat_channel_id).send(opt_out_message)
         else:
             cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result[4]+1, discord_user_id))
         conn.commit()
+    
+    numSuccessfulMeetups = len(successfulMeetups)
+    # Notify the stats channel about the successful matches count
+    match_summary_message = f"Looks like {numSuccessfulMeetups} successful meetups were made out of {numTotalMeetups} total matches during this past session. Keep it up!"
+    await guild.get_channel(stat_channel_id).send(match_summary_message)
 
     #Clear the matchmaking_channels table
     cur.execute("truncate matchmaking_channels")
@@ -319,7 +341,7 @@ async def create_private_channel(user_ids, category_id):
     for user_id in user_ids:
         user = guild.get_member(user_id)
         if user:
-            await channel.send(content=user.mention, content=notification_message)
+            await channel.send(content=notification_message)
 
     # You can also return the created channel if needed
     return channel
