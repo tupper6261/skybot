@@ -269,7 +269,7 @@ async def make_matches():
             user = guild.get_member(discord_user_id)
             if user:
                 # Notify the user about being opted out
-                opt_out_message = f"{user.mention}, it seems like you didn't post a message in your meetup channel during this last session. I've gone ahead and opted you out from meetups for now. Feel free to head to <#{opt_channel_id} and opt back in if you'd like!"
+                opt_out_message = f"{user.mention}, it seems like you didn't post a message in your meetup channel during this last session. I've gone ahead and opted you out from meetups for now. Feel free to head to <#{opt_channel_id}> and opt back in if you'd like!"
                 await guild.get_channel(stat_channel_id).send(opt_out_message)
         else:
             cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result[4]+1, discord_user_id))
@@ -338,10 +338,7 @@ async def create_private_channel(user_ids, category_id):
     await asyncio.sleep(1)
 
     notification_message = f"Hello {' and '.join(userMentions)}! This private channel has been created for your meetup. Enjoy your chat!\n\nCan you go ahead and post in this channel? Nothing too serious - it might get deleted with no notice 😅"
-    for user_id in user_ids:
-        user = guild.get_member(user_id)
-        if user:
-            await channel.send(content=notification_message)
+    await channel.send(content=notification_message)
 
     # You can also return the created channel if needed
     return channel
