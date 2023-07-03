@@ -40,14 +40,14 @@ class OptInView(View):
         #If (s)he isn't in the list, add them and opt them in
         if result == []:
             cur.execute("insert into matchmaking (discord_user_id, opted_in) values ({}, true)".format(user.id))
-            await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Sundays.", ephemeral=True)
+            await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Mondays.", ephemeral=True)
         else:
             #If the user is already opted in
             if result[0][1]:
                 await interaction.response.send_message(content=f"{user.mention}, you are already opted-in.", ephemeral=True)
             else:
                 cur.execute("update matchmaking set opted_in = true where discord_user_id = {}".format(user.id))
-                await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Sundays.", ephemeral=True)
+                await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Mondays.", ephemeral=True)
         cur.close()
         conn.commit()
         conn.close()
@@ -85,9 +85,9 @@ async def on_ready():
 
     message = discord.utils.get(await channel.history(limit=10).flatten(), author=bot.user)
     if not message:
-        message = await channel.send("Click the buttons below to opt-in or opt-out:")
+        message = await channel.send("Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another Skylabber so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other Web3 founders.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
     else:
-        await message.edit(content="Click the buttons below to opt-in or opt-out:")
+        await message.edit(content="Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another Skylabber so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other Web3 founders.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
 
     view = OptInView()
     await message.edit(view=view)
