@@ -39,7 +39,7 @@ class OptInView(View):
         result = cur.fetchall()
         #If (s)he isn't in the list, add them and opt them in
         if result == []:
-            cur.execute("insert into matchmaking (discord_user_id, opted_in, discord_username) values ({0}, true, {1})".format(user.id, user.name))
+            cur.execute("insert into matchmaking (discord_user_id, opted_in, discord_username) values ({0}, true, '{1}')".format(user.id, user.name))
             await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Mondays.", ephemeral=True)
         else:
             #If the user is already opted in
