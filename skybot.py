@@ -93,6 +93,7 @@ async def on_ready():
     await message.edit(view=view)
     while True:
         await check_anniversaries()
+        await make_matches()
 
 @bot.event
 async def on_raw_reaction_add(ctx):
@@ -199,11 +200,12 @@ async def check_anniversaries():
                 #Pauses for a bit so that the bot doesn't flood the channel :)
                 if posted == True:
                     await asyncio.sleep(600)  # Sleep for 10 minutes (600 seconds)
-    # Calculate the time until 10 AM EST and sleep until then
-    today = now.day
-    next_start = now.replace(day = today + 1, hour=10, minute=0, second=0, microsecond=0) 
-    sleep_duration = (next_start - now).total_seconds()
-    await asyncio.sleep(sleep_duration)
+    else:
+        # Calculate the time until 10 AM EST and sleep until then
+        today = now.day
+        next_start = now.replace(day = today + 1, hour=10, minute=0, second=0, microsecond=0) 
+        sleep_duration = (next_start - now).total_seconds()
+        await asyncio.sleep(sleep_duration)
 
 # Clear all existing channels from the specified category except for the opt-in/opt-out and stats channels
 async def clear_existing_channels(category_id):
@@ -230,80 +232,93 @@ async def make_matches():
     conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
     cur = conn.cursor()
 
-    #Go through the channels in the category and find out who ghosted
-    cur.execute("SELECT * FROM matchmaking_channels")
-    results = cur.fetchall()
+    #Check when the next scheduled meetup is
+    command = "select value from globalvariables where name = 'skylab_next_meetup'"
+    cur.execute(command)
+    next_meetup = int(cur.fetchall()[0][0])
+    #If we're past that time:
+    if int(time.time()) >= next_meetup:
 
-    successfulMeetups = []
+        #Go through the channels in the category and find out who ghosted
+        cur.execute("SELECT * FROM matchmaking_channels")
+        results = cur.fetchall()
 
-    for row in results:
-        if row[1] not in successfulMeetups:
-            successfulMeetups.append(row[1])
+        successfulMeetups = []
 
-    numTotalMeetups = len(successfulMeetups)
+        for row in results:
+            if row[1] not in successfulMeetups:
+                successfulMeetups.append(row[1])
 
-    for row in results:
-        ghosted = True
-        discord_user_id = row[0]
-        channel_id = row[1]
+        numTotalMeetups = len(successfulMeetups)
 
-        # Get the channel object
-        channel = guild.get_channel(channel_id)
+        for row in results:
+            ghosted = True
+            discord_user_id = row[0]
+            channel_id = row[1]
 
-        # Retrieve the message history of the channel
-        messages = await channel.history().flatten()
+            # Get the channel object
+            channel = guild.get_channel(channel_id)
 
-        # Iterate through the messages and check the author
-        for message in messages:
-            if message.author.id == discord_user_id:
-                ghosted = False
-                break  # No need to continue iterating if the user's message is found
+            # Retrieve the message history of the channel
+            messages = await channel.history().flatten()
 
-        cur.execute("select * from matchmaking where discord_user_id = {0}".format(discord_user_id))
-        result = cur.fetchall()[0]
-        if ghosted:
-            cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result[3]+1, discord_user_id))
-            cur.execute("update matchmaking set opted_in = false where discord_user_id = {0}".format(discord_user_id))
-            if channel_id in successfulMeetups:
-                successfulMeetups.remove(channel_id)
-            user = guild.get_member(discord_user_id)
-            if user:
-                # Notify the user about being opted out
-                opt_out_message = f"{user.mention}, it seems like you didn't post a message in your meetup channel during this last session. I've gone ahead and opted you out from meetups for now. Feel free to head to <#{opt_channel_id}> and opt back in if you'd like!"
-                await guild.get_channel(stat_channel_id).send(opt_out_message)
-        else:
-            cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result[4]+1, discord_user_id))
-        conn.commit()
-    
-    numSuccessfulMeetups = len(successfulMeetups)
-    # Notify the stats channel about the successful matches count
-    match_summary_message = f"Looks like {numSuccessfulMeetups} successful meetups were made out of {numTotalMeetups} total matches during this past session. Keep it up!"
-    await guild.get_channel(stat_channel_id).send(match_summary_message)
+            # Iterate through the messages and check the author
+            for message in messages:
+                if message.author.id == discord_user_id:
+                    ghosted = False
+                    break  # No need to continue iterating if the user's message is found
 
-    #Clear the matchmaking_channels table
-    cur.execute("truncate matchmaking_channels")
-    conn.commit()
-
-    # Clear existing channels from the category except for the opt-in/opt-out channel
-    await clear_existing_channels(category_id)
-    
-    cur.execute("SELECT discord_user_id FROM matchmaking WHERE opted_in = true")
-    result = cur.fetchall()
-
-    # Collect discord_user_id from the result directly
-    users = [i[0] for i in result]  
-
-    while len(users) >= 2:
-        # If there are an odd number of opted-in users, we'll make a threesome
-        if len(users) % 2 == 1:
-            matchUsers = random.sample(users, 3)
-        else:
-            matchUsers = random.sample(users, 2)
-        users = [user for user in users if user not in matchUsers]
-        newChannel = await create_private_channel(matchUsers, category_id)
-        for user in matchUsers:
-            cur.execute("insert into matchmaking_channels (discord_user_id, channel_id) values ({0}, {1})".format(user, newChannel.id))
+            cur.execute("select * from matchmaking where discord_user_id = {0}".format(discord_user_id))
+            result = cur.fetchall()[0]
+            if ghosted:
+                cur.execute("update matchmaking set num_ghosts = {0} where discord_user_id = {1}".format(result[3]+1, discord_user_id))
+                cur.execute("update matchmaking set opted_in = false where discord_user_id = {0}".format(discord_user_id))
+                if channel_id in successfulMeetups:
+                    successfulMeetups.remove(channel_id)
+                user = guild.get_member(discord_user_id)
+                if user:
+                    # Notify the user about being opted out
+                    opt_out_message = f"{user.mention}, it seems like you didn't post a message in your meetup channel during this last session. I've gone ahead and opted you out from meetups for now. Feel free to head to <#{opt_channel_id}> and opt back in if you'd like!"
+                    await guild.get_channel(stat_channel_id).send(opt_out_message)
+            else:
+                cur.execute("update matchmaking set num_chats = {0} where discord_user_id = {1}".format(result[4]+1, discord_user_id))
             conn.commit()
+        
+        numSuccessfulMeetups = len(successfulMeetups)
+        # Notify the stats channel about the successful matches count
+        match_summary_message = f"Looks like {numSuccessfulMeetups} successful meetups were made out of {numTotalMeetups} total matches during this past session. Keep it up!"
+        await guild.get_channel(stat_channel_id).send(match_summary_message)
+
+        #Clear the matchmaking_channels table
+        cur.execute("truncate matchmaking_channels")
+        conn.commit()
+
+        # Clear existing channels from the category except for the opt-in/opt-out channel
+        await clear_existing_channels(category_id)
+        
+        cur.execute("SELECT discord_user_id FROM matchmaking WHERE opted_in = true")
+        result = cur.fetchall()
+
+        # Collect discord_user_id from the result directly
+        users = [i[0] for i in result]  
+
+        while len(users) >= 2:
+            # If there are an odd number of opted-in users, we'll make a threesome
+            if len(users) % 2 == 1:
+                matchUsers = random.sample(users, 3)
+            else:
+                matchUsers = random.sample(users, 2)
+            users = [user for user in users if user not in matchUsers]
+            newChannel = await create_private_channel(matchUsers, category_id)
+            for user in matchUsers:
+                cur.execute("insert into matchmaking_channels (discord_user_id, channel_id) values ({0}, {1})".format(user, newChannel.id))
+                conn.commit()
+
+        #Update the next meetup time (add a week)
+        next_meetup = str(next_meetup + 604800)
+        command = "update globalvariables set value = '{0}' where name = 'skylab_next_meetup'".format(next_meetup)
+        cur.execute(command)
+        conn.commit()
 
     cur.close()
     conn.commit()
