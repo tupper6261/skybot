@@ -5,7 +5,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import asyncio
-from datetime import datetime, time
+from datetime import datetime, time as datetimetime
 import pytz
 import random
 import time
@@ -162,7 +162,7 @@ async def on_raw_reaction_add(ctx):
 async def check_anniversaries():
     now = datetime.now(pytz.timezone('US/Eastern'))
     # Check if the current time is after 10 AM EST
-    if time(10, 0) <= now.time():
+    if datetimetime(10, 0) <= now.datetimetime():
         #Get the Skylab guild
         guild = bot.get_guild(972905096230891540)
         #Get the general channel
