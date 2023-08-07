@@ -5,7 +5,7 @@ import psycopg2
 import os
 from dotenv import load_dotenv
 import asyncio
-from datetime import datetime
+from datetime import datetime, time
 import pytz
 import random
 import time
