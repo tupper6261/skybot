@@ -162,7 +162,7 @@ async def on_raw_reaction_add(ctx):
 async def check_anniversaries():
     now = datetime.now(pytz.timezone('US/Eastern'))
     # Check if the current time is after 10 AM EST
-    if datetimetime(10, 0) <= now.datetimetime():
+    if datetimetime(10, 0) <= now.time():
         #Get the Skylab guild
         guild = bot.get_guild(972905096230891540)
         #Get the general channel
