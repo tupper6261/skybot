@@ -95,6 +95,8 @@ async def on_ready():
     while True:
         await check_anniversaries()
         await make_matches()
+        #sleep for 6 hours
+        await asyncio.sleep(21600)
 
 @bot.event
 async def on_raw_reaction_add(ctx):
@@ -161,52 +163,44 @@ async def on_raw_reaction_add(ctx):
 #Checks the anniversaries in the user list and sends a happy anniversary message
 async def check_anniversaries():
     now = datetime.now(pytz.timezone('US/Eastern'))
-    # Check if the current time is after 10 AM EST
-    if datetimetime(10, 0) <= now.time():
-        #Get the Skylab guild
-        guild = bot.get_guild(972905096230891540)
-        #Get the general channel
-        postChannel = discord.utils.get(guild.channels, id = 972905096230891543)
+    #Get the Skylab guild
+    guild = bot.get_guild(972905096230891540)
+    #Get the general channel
+    postChannel = discord.utils.get(guild.channels, id = 972905096230891543)
 
-        #Check each member to see if it's their anniversary
-        async for member in guild.fetch_members():
-            join_date = member.joined_at                                                                            
-            years = now.year - join_date.year
-            #We'll use this later
-            posted = False
+    #Check each member to see if it's their anniversary
+    async for member in guild.fetch_members():
+        join_date = member.joined_at                                                                            
+        years = now.year - join_date.year
+        #We'll use this later
+        posted = False
 
-            #If the user has been here at least a year and today is his anniversary
-            if years > 0 and ((join_date.day == now.day and join_date.month == now.month) or (join_date.day == 29 and join_date.month == 2 and now.month == 3 and now.month == 1)) and not member.bot:
-                #See if the user is in the anniversary list
-                conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
-                cur = conn.cursor()
-                cur.execute("select * from skylabanniversaries where discord_user_id = {}".format(member.id))
-                result = cur.fetchall()
-                #If (s)he isn't in the list, add them and post a message
-                if result == []:
-                    cur.execute("insert into skylabanniversaries (discord_user_id, anniversary) values ({0}, {1})".format(member.id, years))
+        #If the user has been here at least a year and today is his anniversary
+        if years > 0 and ((join_date.day == now.day and join_date.month == now.month) or (join_date.day == 29 and join_date.month == 2 and now.month == 3 and now.month == 1)) and not member.bot:
+            #See if the user is in the anniversary list
+            conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+            cur = conn.cursor()
+            cur.execute("select * from skylabanniversaries where discord_user_id = {}".format(member.id))
+            result = cur.fetchall()
+            #If (s)he isn't in the list, add them and post a message
+            if result == []:
+                cur.execute("insert into skylabanniversaries (discord_user_id, anniversary) values ({0}, {1})".format(member.id, years))
+                conn.commit()
+                await postChannel.send(f"🎉 Happy {years} year(s) Skylab anniversary, {member.mention}! 🎉")
+                posted = True
+            #If (s)he is in the list, see if they've already gotten a message this year, and send a message if not
+            else:
+                if result[0][1] != years:
+                    cur.execute("update skylabanniversaries set anniversary = {0}where discord_user_id = {1}".format(years, member.id))
                     conn.commit()
                     await postChannel.send(f"🎉 Happy {years} year(s) Skylab anniversary, {member.mention}! 🎉")
                     posted = True
-                #If (s)he is in the list, see if they've already gotten a message this year, and send a message if not
-                else:
-                    if result[0][1] != years:
-                        cur.execute("update skylabanniversaries set anniversary = {0}where discord_user_id = {1}".format(years, member.id))
-                        conn.commit()
-                        await postChannel.send(f"🎉 Happy {years} year(s) Skylab anniversary, {member.mention}! 🎉")
-                        posted = True
-                cur.close()
-                conn.commit()
-                conn.close()
-                #Pauses for a bit so that the bot doesn't flood the channel :)
-                if posted == True:
-                    await asyncio.sleep(600)  # Sleep for 10 minutes (600 seconds)
-    else:
-        # Calculate the time until 10 AM EST and sleep until then
-        today = now.day
-        next_start = now.replace(day = today + 1, hour=10, minute=0, second=0, microsecond=0) 
-        sleep_duration = (next_start - now).total_seconds()
-        await asyncio.sleep(sleep_duration)
+            cur.close()
+            conn.commit()
+            conn.close()
+            #Pauses for a bit so that the bot doesn't flood the channel :)
+            if posted == True:
+                await asyncio.sleep(600)  # Sleep for 10 minutes (600 seconds)
 
 # Clear all existing channels from the specified category except for the opt-in/opt-out and stats channels
 async def clear_existing_channels(category_id):
