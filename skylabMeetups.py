@@ -354,37 +354,37 @@ async def make_matches(guild):
         line_number = exc_tb.tb_lineno
         print(f"An error occurred: {e} at line {line_number}")
 
-    async def create_private_channel(user_ids, category_id, guild):
+async def create_private_channel(user_ids, category_id, guild):
 
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            guild.me: discord.PermissionOverwrite(read_messages=True)
-        }
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(read_messages=False),
+        guild.me: discord.PermissionOverwrite(read_messages=True)
+    }
 
-        usernames = []
-        userMentions = []
-        for user_id in user_ids:
-            user = guild.get_member(user_id)
-            if user:
-                overwrites[user] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
-                usernames.append(user.name)
-                userMentions.append(user.mention)
+    usernames = []
+    userMentions = []
+    for user_id in user_ids:
+        user = guild.get_member(user_id)
+        if user:
+            overwrites[user] = discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            usernames.append(user.name)
+            userMentions.append(user.mention)
 
-        channel_name = "-".join(usernames)  # Concatenate usernames with hyphens
-        channel = await guild.create_text_channel(
-            name=channel_name,
-            category=guild.get_channel(category_id),
-            overwrites=overwrites
-        )
+    channel_name = "-".join(usernames)  # Concatenate usernames with hyphens
+    channel = await guild.create_text_channel(
+        name=channel_name,
+        category=guild.get_channel(category_id),
+        overwrites=overwrites
+    )
 
-        # Delay before setting permissions
-        await asyncio.sleep(1)
+    # Delay before setting permissions
+    await asyncio.sleep(1)
 
-        notification_message = f"Hello {' and '.join(userMentions)}! This private channel has been created for your meetup. Enjoy your chat!\n\nPlease note that this channel will be deleted when matches are made again next week."
-        await channel.send(content=notification_message)
+    notification_message = f"Hello {' and '.join(userMentions)}! This private channel has been created for your meetup. Enjoy your chat!\n\nPlease note that this channel will be deleted when matches are made again next week."
+    await channel.send(content=notification_message)
 
-        #Returns the created channel if needed
-        return channel
+    #Returns the created channel if needed
+    return channel
     
 
 bot.run(BOT_TOKEN)
