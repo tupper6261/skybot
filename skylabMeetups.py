@@ -190,7 +190,7 @@ async def setup_guild(guild):
     view = OptInView()
     await message.edit(view=view)
 
-    next_meetup = calculate_next_meetup()
+    next_meetup = await calculate_next_meetup()
     #add all the channels and meetup time to the database
     conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
     cur = conn.cursor()
