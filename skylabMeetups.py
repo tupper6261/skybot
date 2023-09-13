@@ -78,6 +78,7 @@ class OptInView(View):
 async def on_ready():
     #We need to make the opt-in/out buttons live within each server
     for guild in bot.guilds:
+        print (guild.name)
         try:
             conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
             cur = conn.cursor()
@@ -230,7 +231,6 @@ async def clear_existing_channels(guild):
 # Make matches
 async def make_matches(guild):
     try:
-        print (guild.name)
         guild_id = guild.id
 
         conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
