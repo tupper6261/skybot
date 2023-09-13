@@ -274,8 +274,8 @@ async def make_matches(guild):
             successfulMeetups = []
 
             for row in results:
-                if row[1] not in successfulMeetups:
-                    successfulMeetups.append(row[1])
+                if row[2] not in successfulMeetups:
+                    successfulMeetups.append(row[2])
 
             numTotalMeetups = len(successfulMeetups)
 
