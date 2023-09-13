@@ -252,7 +252,7 @@ async def make_matches(guild):
         await stats_channel.edit(category = category)
 
     #Check when the next scheduled meetup is
-    cur.execute("select next_meetup from skylab_matchmaking_guilds where guild_id = {0}}".format(guild_id))
+    cur.execute("select next_meetup from skylab_matchmaking_guilds where guild_id = {0}".format(guild_id))
     next_meetup = int(cur.fetchall()[0][0])
     #If we're past that time:
     if int(time.time()) >= next_meetup:
