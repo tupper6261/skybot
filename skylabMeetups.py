@@ -282,8 +282,8 @@ async def make_matches(guild):
             for row in results:
                 #we go through all the channels in the 
                 ghosted = True
-                discord_user_id = row[0]
-                channel_id = row[1]
+                discord_user_id = row[1]
+                channel_id = row[2]
 
                 # Get the channel object
                 channel = guild.get_channel(channel_id)
