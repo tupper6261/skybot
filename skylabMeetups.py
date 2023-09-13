@@ -341,7 +341,7 @@ async def make_matches(guild):
 
             #Update the next meetup time (add a week)
             next_meetup = next_meetup + 604800
-            command = "update skylab_matchmaking_guilds set value = {0} where name = 'skylab_next_meetup'".format(next_meetup)
+            cur.execute("UPDATE skylab_matchmaking_guilds SET next_meetup = {0} WHERE guild_id = {1}".format(next_meetup, guild.id))
             cur.execute(command)
             conn.commit()
 
