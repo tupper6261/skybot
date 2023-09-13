@@ -77,25 +77,28 @@ class OptInView(View):
 async def on_ready():
     #We need to make the opt-in/out buttons live within each server
     for guild in bot.guilds:
-        conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
-        cur = conn.cursor()
-        cur.execute("select * from skylab_matchmaking_guilds where guild_id = {}".format(guild.id))
-        result = cur.fetchall()
-        cur.close()
-        conn.close()
+        try:
+            conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
+            cur = conn.cursor()
+            cur.execute("select * from skylab_matchmaking_guilds where guild_id = {}".format(guild.id))
+            result = cur.fetchall()
+            cur.close()
+            conn.close()
 
-        opt_channel_id = result[0][1]
+            opt_channel_id = result[0][1]
 
-        channel = guild.get_channel(opt_channel_id)
+            channel = guild.get_channel(opt_channel_id)
 
-        message = discord.utils.get(await channel.history(limit=10).flatten(), author=bot.user)
-        if not message:
-            message = await channel.send("Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
-        else:
-            await message.edit(content="Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
+            message = discord.utils.get(await channel.history(limit=10).flatten(), author=bot.user)
+            if not message:
+                message = await channel.send("Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
+            else:
+                await message.edit(content="Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
 
-        view = OptInView()
-        await message.edit(view=view)
+            view = OptInView()
+            await message.edit(view=view)
+        except:
+            continue
 
     #Loop through the guilds the bot is in and make matches when necessary! 
     while True:
