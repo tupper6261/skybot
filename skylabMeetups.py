@@ -340,7 +340,7 @@ async def make_matches(guild):
                 users = [user for user in users if user not in matchUsers]
                 newChannel = await create_private_channel(matchUsers, category_id, guild)
                 for user in matchUsers:
-                    cur.execute("insert into skylab_matchmaking_channels (discord_user_id, channel_id, guild_id) values ({0}, {1})".format(user, newChannel.id, guild_id))
+                    cur.execute("insert into skylab_matchmaking_channels (discord_user_id, channel_id, guild_id) values ({0}, {1}, {2})".format(user, newChannel.id, guild_id))
                     conn.commit()
 
             #Update the next meetup time (add a week)
