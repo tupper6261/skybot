@@ -229,12 +229,12 @@ async def make_matches(guild):
     result = cur.fetchall()
 
     opt_channel_id = result[0][1]
-    stat_channel_id = result[0][2]
+    stats_channel_id = result[0][2]
     category_id = result[0][3]
 
     category = guild.get_channel(category_id)
     opt_channel = guild.get_channel(opt_channel_id)
-    stat_channel = guild.get_channel(stat_channel_id)
+    stats_channel = guild.get_channel(stats_channel_id)
 
     #We're gonna make sure that the channels/category still exist like we think they do, and if not, we'll recreate/adjust them
     if category == None:
@@ -298,7 +298,7 @@ async def make_matches(guild):
                 if user:
                     # Notify the user about being opted out
                     opt_out_message = f"{user.mention}, it seems like you didn't post a message in your meetup channel during this last session. I've gone ahead and opted you out from meetups for now. Feel free to head to <#{opt_channel_id}> and opt back in if you'd like!"
-                    await stat_channel.send(opt_out_message)
+                    await stats_channel.send(opt_out_message)
             else:
                 cur.execute("update skylab_matchmaking set num_chats = {0} where discord_user_id = {1} and guild_id = {2}".format(result[4]+1, discord_user_id, guild_id))
                 conn.commit()
@@ -306,7 +306,7 @@ async def make_matches(guild):
         numSuccessfulMeetups = len(successfulMeetups)
         # Notify the stats channel about the successful matches count
         match_summary_message = f"Looks like {numSuccessfulMeetups} successful meetups were made out of {numTotalMeetups} total matches during this past session. Keep it up!"
-        await stat_channel.send(match_summary_message)
+        await stats_channel.send(match_summary_message)
 
         #Clear the matchmaking channels from this past round
         cur.execute("DELETE FROM skylab_matchmaking_channels WHERE guild_id = {0}".format(guild.id))
