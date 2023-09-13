@@ -12,8 +12,8 @@ import time
 
 load_dotenv()
 
-DATABASE_TOKEN = "postgres://yezaufigplmbrj:daa40d1942c2a9bc98258d57d3c6835b989d25aae748cfb199526dca7da06a66@ec2-34-228-248-175.compute-1.amazonaws.com:5432/db6a6eqkldihes" #os.getenv('DATABASE_TOKEN')
-BOT_TOKEN = "MTE0MjE1ODIyODQ0MTAxMDIxNg.Gq87xI.Nq5wFUAOCxEw8IfFe_dI9NNw9w1JkrGoebxiVI" #os.getenv('DISCORD_BOT_TOKEN')
+DATABASE_TOKEN = os.getenv('DATABASE_TOKEN')
+BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 
 # Set up the bot with the proper intents to read message content and reactions
 intents = discord.Intents.default()
