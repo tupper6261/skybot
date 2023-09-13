@@ -12,8 +12,8 @@ import time
 
 load_dotenv()
 
-DATABASE_TOKEN = os.getenv('DATABASE_TOKEN')
-BOT_TOKEN = os.getenv('DISCORD_BOT_TOKEN')
+DATABASE_TOKEN = "postgres://yezaufigplmbrj:daa40d1942c2a9bc98258d57d3c6835b989d25aae748cfb199526dca7da06a66@ec2-34-228-248-175.compute-1.amazonaws.com:5432/db6a6eqkldihes" #os.getenv('DATABASE_TOKEN')
+BOT_TOKEN = "MTE0MjE1ODIyODQ0MTAxMDIxNg.Gq87xI.Nq5wFUAOCxEw8IfFe_dI9NNw9w1JkrGoebxiVI" #os.getenv('DISCORD_BOT_TOKEN')
 
 # Set up the bot with the proper intents to read message content and reactions
 intents = discord.Intents.default()
@@ -84,25 +84,26 @@ async def on_ready():
         cur.close()
         conn.close()
 
-        opt_channel_id = result[0][1]
+        if result != []:
+            opt_channel_id = result[0][1]
 
-        channel = guild.get_channel(opt_channel_id)
+            channel = guild.get_channel(opt_channel_id)
 
-        message = discord.utils.get(await channel.history(limit=10).flatten(), author=bot.user)
-        if not message:
-            message = await channel.send("Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
-        else:
-            await message.edit(content="Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
+            message = discord.utils.get(await channel.history(limit=10).flatten(), author=bot.user)
+            if not message:
+                message = await channel.send("Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
+            else:
+                await message.edit(content="Hello! Welcome to the Skylab Meetups channel.\n\nEach Monday, you'll be paired with another server member so you can connect, network, plan a Halo gaming session; whatever! It's an opportunity to meet other community members.\n\nAnd on each Monday, if the bot notices you didn't post in your meetup channel during the previous week, you'll be automatically opted-out from the service. You can opt back in at any point, but we want to discourage regular ghosting! \n\nClick the buttons below to opt-in or opt-out:")
 
-        view = OptInView()
-        await message.edit(view=view)
+            view = OptInView()
+            await message.edit(view=view)
 
-        #Loop through the guilds the bot is in and make matches when necessary! 
-        while True:
-            for guild in bot.guilds:
-                await make_matches(guild)
-            #Wait 6 hours before checking again
-            await asyncio.sleep(3600)
+    #Loop through the guilds the bot is in and make matches when necessary! 
+    while True:
+        for guild in bot.guilds:
+            await make_matches(guild)
+        #Wait 6 hours before checking again
+        await asyncio.sleep(3600)
 
 #When the bot joins the guild, we're gonna see if it's joined before and it's already set up or if we need to set it up 
 @bot.event
