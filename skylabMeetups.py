@@ -224,6 +224,7 @@ async def clear_existing_channels(guild):
 
 # Make matches
 async def make_matches(guild):
+    print (guild.name)
     guild_id = guild.id
 
     conn = psycopg2.connect(DATABASE_TOKEN, sslmode='require')
