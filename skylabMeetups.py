@@ -42,7 +42,7 @@ class OptInView(View):
             await interaction.response.send_message(content=f"{user.mention}, you have been added to the matching service. Matchmaking takes place on Mondays.", ephemeral=True)
         else:
             #If the user is already opted in
-            if result[0][1]:
+            if result[0][2]:
                 await interaction.response.send_message(content=f"{user.mention}, you are already opted-in.", ephemeral=True)
             else:
                 cur.execute("update skylab_matchmaking set opted_in = true where discord_user_id = {}".format(user.id))
@@ -65,7 +65,7 @@ class OptInView(View):
             await interaction.response.send_message(content=f"{user.mention}, you are already opted-out.", ephemeral=True)
         else:
             #If the user is currently opted in
-            if result[0][1]:
+            if result[0][2]:
                 cur.execute("update skylab_matchmaking set opted_in = false where discord_user_id = {}".format(user.id))
                 await interaction.response.send_message(content=f"{user.mention}, you have opted-out from the matching service.", ephemeral=True)
             else:
