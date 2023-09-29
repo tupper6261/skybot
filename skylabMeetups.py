@@ -300,7 +300,7 @@ async def make_matches(guild):
                 cur.execute("select * from skylab_matchmaking where discord_user_id = {0} and guild_id = {1}".format(discord_user_id, guild_id))
                 result = cur.fetchall()[0]
                 if ghosted:
-                    cur.execute("update matchmaking set num_ghosts = {0}, opted_in = false where discord_user_id = {1} and guild_id = {2}".format(result[3]+1, discord_user_id, guild_id))
+                    cur.execute("update skylab_matchmaking set num_ghosts = {0}, opted_in = false where discord_user_id = {1} and guild_id = {2}".format(result[3]+1, discord_user_id, guild_id))
                     conn.commit()
                     if channel_id in successfulMeetups:
                         successfulMeetups.remove(channel_id)
